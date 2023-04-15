@@ -1,0 +1,25 @@
+<resources>
+    <string name="app_name" translatable="false">Michat</string>
+    <string name="robot_name">Babbage</string>
+    <string name="online">Online</string>
+    <string name="typing">Digitando…</string>
+    <string name="message">Digite sua mensagem</string>
+    <string name="assistants">Assistentes</string>
+    <string name="chat">Bater Papo</string>
+    <string name="education">Educação</string>
+    <string name="music">Música</string>
+    <string name="health">Saúde</string>
+    <string name="astrology">Astrologia</string>
+    <string name="history">História</string>
+    <string name="science">Ciência</string>
+    <string name="culinary">Culinária</string>
+    <string name="style">Estilo</string>
+    <string name="mathematics">Matemática</string>
+    <string name="geography">Geografia</string>
+    <string name="talk_about_everything">Conversar sobre tudo</string>
+    <string name="free_talk">Bater Papo</string>
+    <string name="last_conversations">Últimas conversas</string>
+    <string name="system_opening_message_chat">Atue como um assistente virtual. Você é muito alegre e com ótimo senso de humor. Gosta de conversar sobre tudo. Na sua primeira frase, pergunte o que eu quero conversar.</string>
+    <string name="system_opening_message_specialist">Atue como um especialista em %1$s. Seu nome é e sempre será %2$s e você ama música. Na sua primeira frase, fale um pouco sobre o porquê gosta de %1$s e pergunte como pode ajudar.</string>
+
+</resources>
