@@ -12,6 +12,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jalloft.michat.R
 import com.jalloft.michat.data.AssistantIdentifier
+import com.jalloft.michat.data.AssistantsEnum
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,6 +37,7 @@ fun HomeTopBar(
 @Composable
 fun ChatTopBar(
     assistant: AssistantIdentifier,
+    isProcessing: Boolean,
     onBackClicked: () -> Unit
 ) {
     Row(
@@ -65,7 +67,7 @@ fun ChatTopBar(
                 color = MaterialTheme.colorScheme.surface
             )
             Text(
-                text = stringResource(id = R.string.online),
+                text = stringResource(id = if(isProcessing) R.string.typing else R.string.online),
                 style = MaterialTheme.typography.titleSmall,
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.outline

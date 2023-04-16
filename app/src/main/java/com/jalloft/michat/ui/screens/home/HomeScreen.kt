@@ -17,12 +17,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.jalloft.michat.R
-import com.jalloft.michat.data.AssistantIdentifier
-import com.jalloft.michat.data.LastMessage
-import com.jalloft.michat.data.systemMessage
+import com.jalloft.michat.data.*
 import com.jalloft.michat.ui.components.HomeTopBar
 import com.jalloft.michat.ui.components.RoundedRobotIcon
 import com.jalloft.michat.utils.ColorUitls.generateRandomColors
@@ -37,7 +37,7 @@ fun getFakeLastMessages(list: List<AssistantIdentifier>) =
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(onClick: (AssistantIdentifier) -> Unit) {
+fun HomeScreen(viewModel: HomeViewModel = hiltViewModel(), onClick: (AssistantIdentifier) -> Unit) {
     val topAppBarState = rememberTopAppBarState()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(topAppBarState)
 
@@ -51,9 +51,14 @@ fun HomeScreen(onClick: (AssistantIdentifier) -> Unit) {
         val assistants by remember {
             mutableStateOf(getAssistants())
         }
+//
+//        val lastMessage by remember {
+//            mutableStateOf(getFakeLastMessages(assistants))
+//        }
 
-        val lastMessage by remember {
-            mutableStateOf(getFakeLastMessages(assistants))
+        val lastMessagesSate = viewModel.lastMessages.collectAsState()
+        var lastMessages by remember {
+            mutableStateOf<List<Message>>(arrayListOf())
         }
 
         LazyColumn(
@@ -75,41 +80,52 @@ fun HomeScreen(onClick: (AssistantIdentifier) -> Unit) {
                 AssistantsRowList(modifier = Modifier, assistants, onClick = onClick)
 
                 FreeTalkPanel(
-                    modifier = Modifier.padding(
-                        start = 16.dp,
-                        top = 16.dp,
-                        end = 16.dp,
-                        bottom = 8.dp
-                    ).clickable { onClick(AssistantIdentifier(AssistantsEnum.FreeChat)) },
+                    modifier = Modifier
+                        .padding(
+                            start = 16.dp,
+                            top = 16.dp,
+                            end = 16.dp,
+                            bottom = 8.dp
+                        )
+                        .clickable { onClick(AssistantIdentifier(AssistantsEnum.FreeChat)) },
                     stringResource(id = R.string.free_talk),
                     stringResource(id = R.string.talk_about_everything)
                 )
 
-                Text(
-                    text = stringResource(id = R.string.last_conversations),
-                    style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier.padding(
-                        start = 16.dp,
-                        top = 8.dp,
-                        end = 16.dp,
-                        bottom = 8.dp
-                    ),
-                    color = MaterialTheme.colorScheme.surface
-                )
+                if (lastMessages.isNotEmpty()){
+                    Text(
+                        text = stringResource(id = R.string.last_conversations),
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.padding(
+                            start = 16.dp,
+                            top = 8.dp,
+                            end = 16.dp,
+                            bottom = 8.dp
+                        ),
+                        color = MaterialTheme.colorScheme.surface
+                    )
+                }
             }
-            items(lastMessage) {
+            items(lastMessages) {
                 LastMessageItem(it, onChatClick = { lastMessage ->
-                    onClick(lastMessage.assistant)
+                    onClick(lastMessage.getAssistant())
                 })
             }
         }
 
+        when (val state = lastMessagesSate.value) {
+            is HomeViewModel.LatestMessagesState.LastMessages -> {
+                lastMessages = state.messages
+            }
+            else -> {}
+        }
     }
 }
 
 
 @Composable
-fun LastMessageItem(message: LastMessage, onChatClick: (LastMessage) -> Unit) {
+fun LastMessageItem(message: Message, onChatClick: (Message) -> Unit) {
+    val assistant = message.getAssistant()
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -117,7 +133,7 @@ fun LastMessageItem(message: LastMessage, onChatClick: (LastMessage) -> Unit) {
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        RoundedRobotIcon(message.assistant, 50.dp, RoundedCornerShape(20))
+        RoundedRobotIcon(assistant, 50.dp, RoundedCornerShape(20))
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -126,14 +142,16 @@ fun LastMessageItem(message: LastMessage, onChatClick: (LastMessage) -> Unit) {
             verticalArrangement = Arrangement.SpaceEvenly
         ) {
             Text(
-                text = if (message.assistant.assistant == AssistantsEnum.FreeChat) stringResource(id = message.assistant.assistant.stringId) else message.assistant.assistant.name,
+                text = if (assistant.assistant == AssistantsEnum.FreeChat) stringResource(id = assistant.assistant.stringId) else assistant.assistant.name,
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.surface
             )
             Text(
-                text = message.message,
+                text = message.content,
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSecondary
+                color = MaterialTheme.colorScheme.onSecondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }

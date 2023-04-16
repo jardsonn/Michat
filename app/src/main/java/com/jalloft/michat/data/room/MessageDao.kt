@@ -6,26 +6,14 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 abstract class MessageDao : BaseDao<Message> {
+    @Query("SELECT * FROM messages WHERE assistant_id = :assistantId")
+    abstract fun getMessagesByAssistantId(assistantId: Int): Flow<List<Message>>
 
-    @Transaction
-    @Query("SELECT * FROM messages WHERE id_assistant = :idAssistant")
-    abstract fun getMessagesByAssistant(idAssistant: Int): Flow<List<Message>>
+    @Query("SELECT * FROM messages WHERE assistant_id = :assistantId ORDER BY timestamp DESC LIMIT 1")
+    abstract fun getLatestMessageByAssistantId(assistantId: Int): Flow<Message>?
 
-    @Transaction
-    @Query("SELECT * FROM messages")
-    abstract fun getMessages(): Flow<List<Message>>
+    @Query("SELECT * FROM messages WHERE role != 'system' AND id IN (SELECT MAX(id) FROM messages WHERE role != 'system' GROUP BY assistant_id) ORDER BY timestamp DESC")
+    abstract fun getLastMessages(): Flow<List<Message>>?
 
-    @Transaction
-    @Query("SELECT * FROM messages ORDER BY date DESC LIMIT 1")
-    abstract fun getLastMessage(): Flow<Message>
-
-//    @Insert
-//    abstract fun insertMessage(message: Message)
-//
-//    @Update
-//    abstract fun updateMessage(message: Message)
-//
-//    @Delete
-//    abstract fun deleteMessage(message: Message)
 
 }

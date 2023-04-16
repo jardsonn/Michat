@@ -1,7 +1,9 @@
 package com.jalloft.michat.ui.screens.chat
 
 import android.content.Intent
+import android.os.Build
 import android.speech.RecognizerIntent
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -16,12 +18,15 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -30,22 +35,29 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsAnimationCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.aallam.openai.api.BetaOpenAI
 import com.aallam.openai.api.chat.ChatMessage
 import com.aallam.openai.api.chat.ChatRole
 import com.jalloft.michat.R
 import com.jalloft.michat.data.AssistantIdentifier
+import com.jalloft.michat.data.systemMessage
 import com.jalloft.michat.ui.components.ChatTopBar
 import com.jalloft.michat.ui.components.LoadingAnimation
 import com.jalloft.michat.ui.theme.White
+import com.jalloft.michat.utils.keyboardAsState
 import kotlinx.coroutines.launch
+import timber.log.Timber.Forest.i
 import java.util.*
 import kotlin.math.max
-
 
 @OptIn(BetaOpenAI::class)
 @Composable
 fun ChatScreen(
+    viewModel: ChatViewModel = hiltViewModel(),
     assistant: AssistantIdentifier,
     onBackClicked: () -> Unit
 ) {
@@ -58,14 +70,20 @@ fun ChatScreen(
 //        mutableStateOf(false)
 //    }
 
-    var chatStarted by remember {
-        mutableStateOf(false)
-    }
+    val currentMessages by viewModel.currentMessages.observeAsState()
+
+    val chatStarted = currentMessages?.isNotEmpty() ?: false
+
+    val isProcessing by viewModel.isProcessing.observeAsState()
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
-            ChatTopBar(assistant, onBackClicked = onBackClicked)
+            ChatTopBar(
+                assistant,
+                isProcessing = isProcessing ?: false,
+                onBackClicked = onBackClicked
+            )
         }
     ) { values ->
         Box(
@@ -76,17 +94,26 @@ fun ChatScreen(
             ChatBody(
                 modifier = Modifier
                     .fillMaxSize()
-                    .blur(if (chatStarted) 0.dp else 8.dp), scrollState, chatStarted
+                    .blur(if (chatStarted) 0.dp else 8.dp),
+                scrollState,
+                chatStarted,
+                currentMessages,
+                isProcessing ?: false,
+                onSendMessage = {
+                    viewModel.sendMessage(it, ChatRole.User)
+                }
             )
 
             if (!chatStarted) {
+                val systemMessage = assistant.systemMessage()
                 StartConversationNotice(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(200.dp)
                         .align(Alignment.Center),
                     onStartChat = {
-                        chatStarted = true
+                        viewModel.sendMessage(systemMessage, ChatRole.System)
+//                        chatStarted = true
                     }
                 )
             }
@@ -108,19 +135,15 @@ fun ChatBody(
     modifier: Modifier,
     scrollState: LazyListState,
     chatStarted: Boolean,
+    currentMessages: List<ChatMessage>?,
+    isProcessing: Boolean,
+    onSendMessage: (String) -> Unit,
 ) {
     val coroutineScope = rememberCoroutineScope()
 
-    //        val messages = viewModel.messages.observeAsState()
+    val isKeyboardOpen by keyboardAsState()
 
-    var isProcessing by remember {
-        mutableStateOf(false)
-    }
-
-
-    val messages = remember {
-        mutableStateListOf<ChatMessage>()
-    }
+    i("TECLADO ESTÀ ABERTO: $isKeyboardOpen")
 
     val (text, setText) = rememberSaveable {
         mutableStateOf("")
@@ -137,15 +160,15 @@ fun ChatBody(
                 },
             state = scrollState
         ) {
-//                messages.value?.let { chatMessage ->
-//                    items(chatMessage.dropWhile { it.role == ChatRole.System }) {
-//                        MessageBody(it)
-//                    }
-//                }
-
-            items(messages.dropWhile { it.role == ChatRole.System }) {
-                MessageBody(it)
+            currentMessages?.let { chatMessage ->
+                items(chatMessage.dropWhile { it.role == ChatRole.System }) {
+                    MessageBody(it)
+                }
             }
+
+//            items(messages.dropWhile { it.role == ChatRole.System }) {
+//                MessageBody(it)
+//            }
 
             item {
                 if (isProcessing) {
@@ -182,18 +205,23 @@ fun ChatBody(
 
             },
             chatStarted = chatStarted,
+            isProcessing = isProcessing,
             onSendMessage = {
+                onSendMessage(text)
 //                    viewModel.sendMessage(text)
-                val message = ChatMessage(if (messages.size % 2 == 0) ChatRole.User else ChatRole.Assistant, text)
-                isProcessing = true
-                messages.add(message)
+//                val message = ChatMessage(
+//                    if (messages.size % 2 == 0) ChatRole.User else ChatRole.Assistant,
+//                    text
+//                )
+//                messages.add(message)
             },
         )
     }
 
-    LaunchedEffect(messages.size) {
+
+    LaunchedEffect(currentMessages?.size, isKeyboardOpen) {
         coroutineScope.launch {
-            scrollState.animateScrollToItem(max(messages.size, 1) - 1)
+            scrollState.animateScrollToItem(max(currentMessages?.size ?: 0, 1) - 1)
 
         }
     }
@@ -237,13 +265,7 @@ fun StartConversationNotice(modifier: Modifier, onStartChat: () -> Unit) {
 @OptIn(BetaOpenAI::class)
 @Composable
 fun MessageBody(chatMessage: ChatMessage) {
-    val maxCardRoundness = 20.dp
-    val minCardRoundness = 10.dp
-    val cardRoundness = lerp(
-        minCardRoundness,
-        maxCardRoundness,
-        chatMessage.content.length / 100f
-    )
+    val cardRoundness = calculateBorderRadius(chatMessage.content)
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -272,8 +294,20 @@ fun MessageBody(chatMessage: ChatMessage) {
     }
 }
 
-fun lerp(start: Dp, stop: Dp, fraction: Float): Dp {
-    return start + (stop - start) * fraction
+@Composable
+fun calculateBorderRadius(text: String): Dp {
+    val maxLength = 100 // Define o tamanho máximo do texto para o cálculo
+    val defaultRadius = 16.dp // Raio padrão das bordas arredondadas
+    val maxRadius = 8.dp // Raio máximo das bordas arredondadas
+
+    // Calcula o tamanho relativo do texto em relação ao tamanho máximo
+    val textLengthPercentage = (text.length.toFloat() / maxLength.toFloat()).coerceIn(0f, 1f)
+
+    // Calcula o tamanho do arredondamento baseado no tamanho relativo do texto
+    val calculatedRadius = maxRadius * (1f - textLengthPercentage)
+
+    // Retorna o tamanho do arredondamento, considerando o valor mínimo
+    return (defaultRadius + calculatedRadius).coerceAtLeast(0.dp)
 }
 
 @OptIn(BetaOpenAI::class)
@@ -295,6 +329,7 @@ fun ChatTextInput(
     onSendMessage: () -> Unit,
     onVoiceClicked: () -> Unit,
     chatStarted: Boolean,
+    isProcessing: Boolean,
 ) {
     var showSendButton by remember { mutableStateOf(false) }
 
@@ -366,7 +401,7 @@ fun ChatTextInput(
             ),
             modifier = Modifier.size(50.dp),
             contentPadding = PaddingValues(0.dp),
-            enabled = showSendButton
+            enabled = showSendButton && !isProcessing
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.round_send_24),

@@ -16,8 +16,24 @@ import kotlinx.parcelize.Parcelize
 data class AssistantIdentifier(
     val assistant: AssistantsEnum,
     val specialty: AssistantSpecialty = getAssistantByName(assistant),
-    val color: Int = getColorByName(specialty).toArgb()
+    val color: Int = getColorByName(specialty).toArgb(),
+    val id: Int = getIdByName(assistant)
 ) : Parcelable
+
+fun getIdByName(assistant: AssistantsEnum): Int {
+    return when (assistant) {
+        AssistantsEnum.FreeChat -> 0
+        AssistantsEnum.Galilei -> 1
+        AssistantsEnum.Klein -> 2
+        AssistantsEnum.Jenner -> 3
+        AssistantsEnum.Presley -> 4
+        AssistantsEnum.Gauss -> 5
+        AssistantsEnum.Ranke -> 6
+        AssistantsEnum.Curie -> 7
+        AssistantsEnum.Escoffier -> 8
+        AssistantsEnum.Dior -> 9
+    }
+}
 
 
 @Parcelize

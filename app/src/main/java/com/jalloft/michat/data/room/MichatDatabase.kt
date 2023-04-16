@@ -6,19 +6,16 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import androidx.sqlite.db.SupportSQLiteDatabase
-import com.jalloft.michat.data.Assistant
 import com.jalloft.michat.data.Message
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
-@Database(entities = [Assistant::class, Message::class], version = 1)
+@Database(entities = [Message::class], version = 1)
 @TypeConverters(DateTimeTypeConverters::class)
 abstract class MichatDatabase : RoomDatabase() {
-
-    abstract fun assistantDao(): AssistantDao
-    abstract fun messageDao(): AssistantDao
+    abstract fun messageDao(): MessageDao
 
     companion object {
         private var INSTANCE: MichatDatabase? = null

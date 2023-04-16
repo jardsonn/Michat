@@ -1,7 +1,6 @@
 package com.jalloft.michat.ui
 
 import androidx.compose.runtime.Composable
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -10,12 +9,11 @@ import androidx.navigation.navArgument
 import com.jalloft.michat.data.toAssistant
 import com.jalloft.michat.data.toJson
 import com.jalloft.michat.ui.screens.chat.ChatScreen
-import com.jalloft.michat.ui.screens.chat.ChatViewModel
 import com.jalloft.michat.ui.screens.home.HomeScreen
 
 @Composable
 fun MichatApp(
-    viewModel: ChatViewModel = hiltViewModel()
+
 ) {
     val navController = rememberNavController()
     NavHost(
@@ -37,7 +35,7 @@ fun MichatApp(
             )
         ) {
             it.arguments?.getString("assistant")?.toAssistant()?.let { assistant ->
-                ChatScreen(assistant, onBackClicked = { navController.popBackStack() })
+                ChatScreen(assistant = assistant, onBackClicked = { navController.popBackStack() })
             }
         }
     }

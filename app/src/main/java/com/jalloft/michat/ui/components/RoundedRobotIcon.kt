@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.jalloft.michat.R
 import com.jalloft.michat.data.AssistantIdentifier
+import com.jalloft.michat.data.AssistantsEnum
 import com.jalloft.michat.ui.theme.White
 
 

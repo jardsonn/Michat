@@ -1,35 +1,23 @@
 package com.jalloft.michat.repository
 
-import androidx.room.Query
-import androidx.room.Transaction
-import com.jalloft.michat.data.Assistant
-import com.jalloft.michat.data.AssistantWithMessage
 import com.jalloft.michat.data.Message
 import kotlinx.coroutines.flow.Flow
 
 
 interface MichatRepository {
 
-    fun getMessageWithAssistant(): Flow<List<AssistantWithMessage>>
+    fun getMessages(assistantId: Int): Flow<List<Message>>
 
-    fun getAssistants(): Flow<List<Assistant>>
+    fun getLatestMessageByAssistantId(assistantId: Int): Flow<Message>?
 
-    fun getMessagesByAssistant(idAssistant: Int): Flow<List<Message>>
+    fun getLastMessages(): Flow<List<Message>>?
 
-    fun getMessages(): Flow<List<Message>>
+    suspend fun insertMessage(message: Message): Long
 
-    fun getLastMessage(): Flow<Message>
-
-    suspend fun insertMessage(message: Message)
+    suspend fun insertAllMessage(messages: Collection<Message>)
 
     suspend fun updateMessage(message: Message)
 
     suspend fun deleteMessage(message: Message)
-
-    suspend fun insertAssistant(assistant: Assistant)
-
-    suspend fun insertAllAssistant(assistant: Collection<Assistant>)
-
-    suspend fun updateAssistant(assistant: Assistant)
 
 }

@@ -1,7 +1,6 @@
 package com.jalloft.michat.di
 
 import android.content.Context
-import com.jalloft.michat.data.room.AssistantDao
 import com.jalloft.michat.data.room.MessageDao
 import com.jalloft.michat.data.room.MichatDatabase
 import com.jalloft.michat.repository.MichatRepository
@@ -29,19 +28,13 @@ object DatabaseModule {
 
     @Singleton
     @Provides
-    fun provideAssistantDao(database: MichatDatabase): AssistantDao {
-        return database.assistantDao()
-    }
-
-    @Singleton
-    @Provides
-    fun provideMessageDao(database: MichatDatabase): AssistantDao {
+    fun provideMessageDao(database: MichatDatabase): MessageDao {
         return database.messageDao()
     }
 
     @Singleton
     @Provides
-    fun provideRepository(assistantDao: AssistantDao, messageDao: MessageDao): MichatRepository =
-        MichatRepositoryImpl(assistantDao, messageDao)
+    fun provideRepository(messageDao: MessageDao): MichatRepository =
+        MichatRepositoryImpl(messageDao)
 
 }
