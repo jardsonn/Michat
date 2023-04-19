@@ -14,14 +14,14 @@ import androidx.core.view.WindowCompat
 // NEWER
 private val MichatLightColorScheme = lightColorScheme(
     primary = Red,
-    secondary = Gray80,
+    secondary = RaisinBlack,
     onPrimary = White,
-    onSecondary = Gray20,
+    onSecondary = SilverChalice,
     background = White,
-    onSurface = Gray10,
-    surface = Gray90,
+    onSurface = BrightGray,
+    surface = SmokyBlack,
     outline = OnlineWhiteColor,
-    surfaceVariant = Gray90.copy(.4f)
+    surfaceVariant = SmokyBlack.copy(.4f)
 
 )
 
@@ -29,13 +29,13 @@ private val MichatDarkColorScheme = lightColorScheme(
     primary = Red,
     secondary = Red,
     onPrimary = White,
-    onSecondary = Gray20,
-    background = Gray80,
-    onSurface = Gray90,
+    onSecondary = SilverChalice,
+    background = RaisinBlack,
+    onSurface = SmokyBlack,
     surface = White,
 
     outline = OnlineBlackColor,
-    surfaceVariant = Gray90.copy(.6f)
+    surfaceVariant = SmokyBlack.copy(.6f)
 
 )
 

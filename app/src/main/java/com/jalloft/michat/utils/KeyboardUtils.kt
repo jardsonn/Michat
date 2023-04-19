@@ -11,7 +11,6 @@ import androidx.core.view.WindowInsetsCompat
 enum class Keyboard {
     Opened, Closed
 }
-
 @Composable
 fun keyboardOpenState(): State<Keyboard> {
     val keyboardState = remember { mutableStateOf(Keyboard.Closed) }

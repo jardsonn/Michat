@@ -21,5 +21,9 @@
     <string name="last_conversations">Últimas conversas</string>
     <string name="system_opening_message_chat">Atue como um assistente virtual. Você é muito alegre e com ótimo senso de humor. Gosta de conversar sobre tudo. Na sua primeira frase, pergunte o que eu quero conversar.</string>
     <string name="system_opening_message_specialist">Atue como um especialista em %1$s. Seu nome é e sempre será %2$s e você ama música. Na sua primeira frase, fale um pouco sobre o porquê gosta de %1$s e pergunte como pode ajudar.</string>
+    <string name="options_menu">Menu de opções</string>
+    <string name="settings">Configurações</string>
+    <string name="network_connected">Conexão restabelecida</string>
+    <string name="network_not_connected">Sem conexão com a Internet</string>
 
 </resources>

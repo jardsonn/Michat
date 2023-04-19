@@ -1,5 +1,6 @@
 package com.jalloft.michat.ui
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -10,20 +11,27 @@ import com.jalloft.michat.data.toAssistant
 import com.jalloft.michat.data.toJson
 import com.jalloft.michat.ui.screens.chat.ChatScreen
 import com.jalloft.michat.ui.screens.home.HomeScreen
+import com.jalloft.michat.ui.screens.settings.SettingsScreen
 
 @Composable
-fun MichatApp(
-
-) {
+fun MichatApp() {
     val navController = rememberNavController()
     NavHost(
         navController = navController,
         startDestination = MichatDestination.HomeDestination.route
     ) {
         composable(MichatDestination.HomeDestination.route) {
-            HomeScreen(onClick = {
-                navController.navigate(MichatDestination.ChatDestination.route.plus("/?assistant=${it.toJson()}"))
-            })
+            HomeScreen(
+                onClick = {
+                    navController.navigate(MichatDestination.ChatDestination.route.plus("/?assistant=${it.toJson()}"))
+                },
+                onSettingClick = {
+                    navController.navigate(MichatDestination.SettingsDestination.route)
+                }
+            )
+        }
+        composable(MichatDestination.SettingsDestination.route) {
+            SettingsScreen(onBackClicked = {navController.popBackStack()})
         }
         composable(
             MichatDestination.ChatDestination.route.plus("/?assistant={assistant}"),
@@ -45,4 +53,5 @@ fun MichatApp(
 sealed class MichatDestination(val route: String) {
     object HomeDestination : MichatDestination("home")
     object ChatDestination : MichatDestination("chat")
+    object SettingsDestination : MichatDestination("settings")
 }

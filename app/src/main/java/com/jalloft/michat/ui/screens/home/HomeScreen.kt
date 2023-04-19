@@ -1,6 +1,9 @@
 package com.jalloft.michat.ui.screens.home
 
-import androidx.compose.animation.Animatable
+import androidx.compose.animation.*
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,7 +19,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -24,28 +29,44 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.jalloft.michat.R
 import com.jalloft.michat.data.*
 import com.jalloft.michat.ui.components.HomeTopBar
+import com.jalloft.michat.ui.components.NetworkStatus
 import com.jalloft.michat.ui.components.RoundedRobotIcon
+import com.jalloft.michat.ui.theme.Malachite
+import com.jalloft.michat.ui.theme.Red
 import com.jalloft.michat.utils.ColorUitls.generateRandomColors
+import com.jalloft.michat.utils.ConnectionState
+import com.jalloft.michat.utils.connectivityState
+import kotlinx.coroutines.delay
+import timber.log.Timber.Forest.i
 
 fun getAssistants() = AssistantsEnum.values().map {
     AssistantIdentifier(it)
 }
 
-fun getFakeLastMessages(list: List<AssistantIdentifier>) =
-    list.map { LastMessage(it, "Uma suposta última mensagem") }
-
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(viewModel: HomeViewModel = hiltViewModel(), onClick: (AssistantIdentifier) -> Unit) {
+fun HomeScreen(
+    viewModel: HomeViewModel = hiltViewModel(),
+    onClick: (AssistantIdentifier) -> Unit,
+    onSettingClick: () -> Unit,
+) {
+
     val topAppBarState = rememberTopAppBarState()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(topAppBarState)
+
+    val connectionState by connectivityState()
+
+    i("CONEXÃO ESTADO: $connectionState")
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
-            HomeTopBar(title = stringResource(id = R.string.app_name), scrollBehavior)
-        }
+            HomeTopBar(
+                title = stringResource(id = R.string.app_name),
+                scrollBehavior,
+                onActionClick = onSettingClick
+            )
+        },
     ) { values ->
 
         val assistants by remember {
@@ -67,6 +88,11 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel(), onClick: (AssistantId
                 .padding(values)
                 .fillMaxSize()
         ) {
+
+//            item {
+//                NetworkStatus(connectionState)
+//            }
+
             item {
                 Text(
                     text = stringResource(id = R.string.assistants),
@@ -92,7 +118,7 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel(), onClick: (AssistantId
                     stringResource(id = R.string.talk_about_everything)
                 )
 
-                if (lastMessages.isNotEmpty()){
+                if (lastMessages.isNotEmpty()) {
                     Text(
                         text = stringResource(id = R.string.last_conversations),
                         style = MaterialTheme.typography.labelLarge,
@@ -249,7 +275,7 @@ fun AssistantRowItem(assistant: AssistantIdentifier, onClick: (AssistantIdentifi
 
         )
         Text(
-            text = stringResource(id = assistant.specialty.stringId),
+            text = stringResource(id = assistant.specialtyNameId),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSecondary
         )

@@ -7,6 +7,7 @@ import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -18,7 +19,8 @@ import com.jalloft.michat.data.AssistantsEnum
 @Composable
 fun HomeTopBar(
     title: String,
-    scrollBehavior: TopAppBarScrollBehavior?
+    scrollBehavior: TopAppBarScrollBehavior?,
+    onActionClick: () -> Unit,
 ) {
     TopAppBar(
         title = {
@@ -30,7 +32,19 @@ fun HomeTopBar(
             )
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
-        scrollBehavior = scrollBehavior
+        scrollBehavior = scrollBehavior,
+        actions = {
+            IconButton(
+                onClick = onActionClick,
+                colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_settings),
+                    contentDescription = stringResource(id = R.string.options_menu),
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
     )
 }
 
@@ -67,7 +81,7 @@ fun ChatTopBar(
                 color = MaterialTheme.colorScheme.surface
             )
             Text(
-                text = stringResource(id = if(isProcessing) R.string.typing else R.string.online),
+                text = stringResource(id = if (isProcessing) R.string.typing else R.string.online),
                 style = MaterialTheme.typography.titleSmall,
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.outline
@@ -75,4 +89,38 @@ fun ChatTopBar(
 
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ScreensTopBar(
+    title: String,
+    scrollBehavior: TopAppBarScrollBehavior? = null,
+    actions: @Composable RowScope.() -> Unit = {},
+    onBackClicked: () -> Unit = {},
+    colors: TopAppBarColors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
+) {
+    TopAppBar(
+        title = {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.surface
+            )
+        },
+        colors = colors,
+        scrollBehavior = scrollBehavior,
+        actions = actions,
+        navigationIcon = {
+            IconButton(
+                onClick = { onBackClicked() },
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.ArrowBack, contentDescription = null,
+                    tint = MaterialTheme.colorScheme.surface
+                )
+            }
+        }
+    )
 }

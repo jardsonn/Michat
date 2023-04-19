@@ -1,6 +1,7 @@
 package com.jalloft.michat.ui.screens.chat
 
 import android.content.Intent
+import android.media.MediaPlayer
 import android.os.Build
 import android.speech.RecognizerIntent
 import androidx.annotation.RequiresApi
@@ -143,7 +144,15 @@ fun ChatBody(
 
     val isKeyboardOpen by keyboardAsState()
 
-    i("TECLADO ESTÀ ABERTO: $isKeyboardOpen")
+    val context = LocalContext.current
+
+    val mediaPlayer = remember { MediaPlayer.create(context, R.raw.chat_bot_toogle) }
+    var waintingAnswer by remember { mutableStateOf(false) }
+
+    if (!isProcessing && waintingAnswer) {
+        mediaPlayer.start()
+        waintingAnswer = false
+    }
 
     val (text, setText) = rememberSaveable {
         mutableStateOf("")
@@ -208,6 +217,7 @@ fun ChatBody(
             isProcessing = isProcessing,
             onSendMessage = {
                 onSendMessage(text)
+                waintingAnswer = true
 //                    viewModel.sendMessage(text)
 //                val message = ChatMessage(
 //                    if (messages.size % 2 == 0) ChatRole.User else ChatRole.Assistant,
@@ -218,11 +228,15 @@ fun ChatBody(
         )
     }
 
-
     LaunchedEffect(currentMessages?.size, isKeyboardOpen) {
         coroutineScope.launch {
             scrollState.animateScrollToItem(max(currentMessages?.size ?: 0, 1) - 1)
+        }
+    }
 
+    DisposableEffect(mediaPlayer) {
+        onDispose {
+            mediaPlayer.release()
         }
     }
 }
