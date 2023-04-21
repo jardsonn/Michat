@@ -2,9 +2,7 @@ package com.jalloft.michat.ui.screens.chat
 
 import android.content.Intent
 import android.media.MediaPlayer
-import android.os.Build
 import android.speech.RecognizerIntent
-import androidx.annotation.RequiresApi
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -22,7 +20,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Shape
@@ -30,15 +27,13 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsAnimationCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.aallam.openai.api.BetaOpenAI
 import com.aallam.openai.api.chat.ChatMessage
@@ -49,6 +44,8 @@ import com.jalloft.michat.data.systemMessage
 import com.jalloft.michat.ui.components.ChatTopBar
 import com.jalloft.michat.ui.components.LoadingAnimation
 import com.jalloft.michat.ui.theme.White
+import com.jalloft.michat.utils.ConnectionState
+import com.jalloft.michat.utils.connectivityState
 import com.jalloft.michat.utils.keyboardAsState
 import kotlinx.coroutines.launch
 import timber.log.Timber.Forest.i
@@ -60,16 +57,14 @@ import kotlin.math.max
 fun ChatScreen(
     viewModel: ChatViewModel = hiltViewModel(),
     assistant: AssistantIdentifier,
+    onNotifyNetworkWrning: () -> Unit,
     onBackClicked: () -> Unit
 ) {
 
     val scrollState = rememberLazyListState()
+    val connectionState by connectivityState()
 
-    //    val isProcessing = viewModel.processing.observeAsState()
-
-//    var isProcessing by remember {
-//        mutableStateOf(false)
-//    }
+    val isNetworkConnected = connectionState == ConnectionState.Available
 
     val currentMessages by viewModel.currentMessages.observeAsState()
 
@@ -77,12 +72,23 @@ fun ChatScreen(
 
     val isProcessing by viewModel.isProcessing.observeAsState()
 
+    i("Esta processando 1: $isProcessing")
+
+    if (!isNetworkConnected && isProcessing == true) {
+        viewModel.cancelSendingMessage()
+    }
+
+//    if (isNetworkConnected) {
+//        viewModel.answerLastMessage()
+//    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
             ChatTopBar(
                 assistant,
                 isProcessing = isProcessing ?: false,
+                isNetworkConnected = isNetworkConnected,
                 onBackClicked = onBackClicked
             )
         }
@@ -99,9 +105,14 @@ fun ChatScreen(
                 scrollState,
                 chatStarted,
                 currentMessages,
+                isNetworkConnected = isNetworkConnected,
                 isProcessing ?: false,
                 onSendMessage = {
-                    viewModel.sendMessage(it, ChatRole.User)
+                    viewModel.sendMessage(it, ChatRole.User, isNetworkConnected)
+                    if (!isNetworkConnected) {
+                        viewModel.cancelSendingMessage()
+                        onNotifyNetworkWrning()
+                    }
                 }
             )
 
@@ -113,8 +124,11 @@ fun ChatScreen(
                         .height(200.dp)
                         .align(Alignment.Center),
                     onStartChat = {
-                        viewModel.sendMessage(systemMessage, ChatRole.System)
-//                        chatStarted = true
+                        if (isNetworkConnected) {
+                            viewModel.sendMessage(systemMessage, ChatRole.System)
+                        } else {
+                            onNotifyNetworkWrning()
+                        }
                     }
                 )
             }
@@ -137,6 +151,7 @@ fun ChatBody(
     scrollState: LazyListState,
     chatStarted: Boolean,
     currentMessages: List<ChatMessage>?,
+    isNetworkConnected: Boolean,
     isProcessing: Boolean,
     onSendMessage: (String) -> Unit,
 ) {
@@ -149,7 +164,7 @@ fun ChatBody(
     val mediaPlayer = remember { MediaPlayer.create(context, R.raw.chat_bot_toogle) }
     var waintingAnswer by remember { mutableStateOf(false) }
 
-    if (!isProcessing && waintingAnswer) {
+    if (!isProcessing && waintingAnswer && isNetworkConnected) {
         mediaPlayer.start()
         waintingAnswer = false
     }
@@ -167,19 +182,12 @@ fun ChatBody(
                     bottom.linkTo(chatTextinput.top)
                     height = Dimension.fillToConstraints
                 },
-            state = scrollState
+            reverseLayout = true,
+            state = scrollState,
+            verticalArrangement = Arrangement.Top
         ) {
-            currentMessages?.let { chatMessage ->
-                items(chatMessage.dropWhile { it.role == ChatRole.System }) {
-                    MessageBody(it)
-                }
-            }
-
-//            items(messages.dropWhile { it.role == ChatRole.System }) {
-//                MessageBody(it)
-//            }
-
             item {
+                i("ESTÁ Processando: $isProcessing")
                 if (isProcessing) {
                     LoadingAnimation(
                         shape = RoundedCornerShape(100),
@@ -190,6 +198,11 @@ fun ChatBody(
                 }
             }
 
+            currentMessages?.let { chatMessage ->
+                items(chatMessage.dropLastWhile { it.role == ChatRole.System }) {
+                    MessageBody(it)
+                }
+            }
         }
 
         ChatTextInput(
@@ -197,6 +210,7 @@ fun ChatBody(
                 bottom.linkTo(parent.bottom)
             },
             value = text,
+            isNetworkConnected = isNetworkConnected,
             onValueChange = { setText(it) },
             onVoiceClicked = {
                 val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
@@ -218,19 +232,14 @@ fun ChatBody(
             onSendMessage = {
                 onSendMessage(text)
                 waintingAnswer = true
-//                    viewModel.sendMessage(text)
-//                val message = ChatMessage(
-//                    if (messages.size % 2 == 0) ChatRole.User else ChatRole.Assistant,
-//                    text
-//                )
-//                messages.add(message)
             },
         )
     }
 
     LaunchedEffect(currentMessages?.size, isKeyboardOpen) {
         coroutineScope.launch {
-            scrollState.animateScrollToItem(max(currentMessages?.size ?: 0, 1) - 1)
+//            scrollState.animateScrollToItem(max(currentMessages?.size ?: 0, 1) - 1)
+            scrollState.animateScrollToItem(0)
         }
     }
 
@@ -339,6 +348,7 @@ fun messageBodyShape(role: ChatRole, size: Dp): Shape {
 fun ChatTextInput(
     modifier: Modifier,
     value: String,
+    isNetworkConnected: Boolean,
     onValueChange: (String) -> Unit,
     onSendMessage: () -> Unit,
     onVoiceClicked: () -> Unit,
@@ -359,7 +369,10 @@ fun ChatTextInput(
                 .heightIn(max = 100.dp)
                 .weight(1f)
                 .padding(end = 8.dp),
-            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+            keyboardOptions = KeyboardOptions(
+                capitalization = KeyboardCapitalization.Sentences,
+                imeAction = ImeAction.Done,
+            ),
             value = value,
             enabled = chatStarted,
             onValueChange = {
@@ -396,16 +409,11 @@ fun ChatTextInput(
         Button(
             onClick = {
                 onSendMessage()
+//                if (isNetworkConnected) {
                 onValueChange("")
                 showSendButton = false
-
-//                if (showSendButton) {
-//                    onSendMessage()
-//                    onValueChange("")
-//                    showSendButton = false
-//                } else {
-//                    onVoiceClicked()
 //                }
+
             },
             shape = RoundedCornerShape(25),
             colors = ButtonDefaults.buttonColors(

@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 abstract class MessageDao : BaseDao<Message> {
-    @Query("SELECT * FROM messages WHERE assistant_id = :assistantId")
+    @Query("SELECT * FROM messages WHERE assistant_id = :assistantId ORDER BY timestamp DESC")
     abstract fun getMessagesByAssistantId(assistantId: Int): Flow<List<Message>>
 
     @Query("SELECT * FROM messages WHERE assistant_id = :assistantId ORDER BY timestamp DESC LIMIT 1")

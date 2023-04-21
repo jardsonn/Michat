@@ -12,10 +12,10 @@ import com.jalloft.michat.data.Message
 import com.jalloft.michat.data.toAssistant
 import com.jalloft.michat.repository.MichatRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.last
+import timber.log.Timber.Forest.e
+import timber.log.Timber.Forest.i
 import javax.inject.Inject
 
 @OptIn(BetaOpenAI::class)
@@ -35,18 +35,42 @@ class ChatViewModel @Inject constructor(
     private val _isProcessing = MutableLiveData<Boolean>(false)
     val isProcessing: LiveData<Boolean> get() = _isProcessing
 
+    private var sendingMessageJob: Job? = null
+
+    fun cancelSendingMessage() {
+        sendingMessageJob?.let { job ->
+            if (job.isActive) {
+                i("CANCELANDO ENVIO DE MENSAGEM")
+                job.cancel()
+            }
+        }
+    }
+
+    fun answerLastMessage(chatMessages: List<ChatMessage>? = currentMessages.value) {
+//        if ((sendingMessageJob == null || sendingMessageJob?.isActive == false) && isProcessing.value == false) {
+            chatMessages?.let { messages ->
+                if (messages.isNotEmpty() && messages.last().role != ChatRole.Assistant) {
+                    _isProcessing.value = true
+                    chatCompletion(messages)
+                }
+            }
+//        }
+    }
+
     fun getMessages(assistantIdentifier: AssistantIdentifier) =
         repo.getMessages(assistantIdentifier.id)
 
     init {
         viewModelScope.launch {
-
             currentAssistant?.let { assistant ->
                 repo.getMessages(assistant.id).collect { messages ->
                     val chatMessages = messages.map { ChatMessage(ChatRole(it.role), it.content) }
-                    _currentMessages.postValue(chatMessages)
+                    _currentMessages.postValue(chatMessages/*.reversed()*/)
                 }
             }
+            delay(100)
+            answerLastMessage()
+            i("Esta processando 2: $isProcessing")
         }
 
     }
@@ -71,8 +95,8 @@ class ChatViewModel @Inject constructor(
     }
 
 
-    fun sendMessage(content: String, role: ChatRole) {
-        _isProcessing.value = true
+    fun sendMessage(content: String, role: ChatRole, isConnected: Boolean = true) {
+        _isProcessing.value = isConnected
         val chatMessage = ChatMessage(role, content)
         addMessage(chatMessage) {
             currentMessages.value?.let {
@@ -83,22 +107,29 @@ class ChatViewModel @Inject constructor(
 
 
     private fun chatCompletion(messages: List<ChatMessage>) {
-        viewModelScope.launch(Dispatchers.IO) {
-            if (messages.last().role != ChatRole.Assistant) {
-                val chatCompletionRequest = ChatCompletionRequest(
-                    model = ModelId("gpt-3.5-turbo"),
-                    messages = messages
-                )
-                openAI.chatCompletion(chatCompletionRequest).choices.forEach { choice ->
-                    choice.message?.let { chatMessage ->
-                        withContext(Dispatchers.Main) {
-                            _isProcessing.value = false
-                            addMessage(ChatMessage(chatMessage.role, chatMessage.content))
+        sendingMessageJob = viewModelScope.launch(Dispatchers.IO) {
+            if (messages.first().role != ChatRole.Assistant) {
+                try {
+                    val chatCompletionRequest = ChatCompletionRequest(
+                        model = ModelId("gpt-3.5-turbo"),
+                        messages = messages.reversed()
+                    )
+                    openAI.chatCompletion(chatCompletionRequest).choices.forEach { choice ->
+                        choice.message?.let { chatMessage ->
+                            withContext(Dispatchers.Main) {
+                                addMessage(ChatMessage(chatMessage.role, chatMessage.content))
+                                _isProcessing.value = false
+                            }
                         }
                     }
+                } catch (error: Throwable) {
+                    _isProcessing.postValue(false)
+                    e(error)
                 }
+
             }
         }
+
     }
 
 }

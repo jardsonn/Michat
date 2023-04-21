@@ -1,12 +1,9 @@
 package com.jalloft.michat.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.*
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Icon
@@ -27,22 +24,21 @@ import kotlinx.coroutines.delay
 
 
 @Composable
-fun NetworkStatus(connectionState: ConnectionState) {
+fun NetworkStatus(modifier: Modifier = Modifier, connectionState: ConnectionState, notifyNetworkWrning: Boolean) {
     val isNetworkConnected = connectionState == ConnectionState.Available
-
     var showNetworkStatus by remember { mutableStateOf(false) }
 
     var isFirstTime by remember { mutableStateOf(true) }
 
-    Box(modifier = Modifier.fillMaxWidth()) {
+    Box(modifier = modifier.fillMaxWidth()) {
         AnimatedVisibility(
             visible = showNetworkStatus,
-            enter = slideInVertically(
-                initialOffsetY = { -it },
+            enter = expandIn(
+                expandFrom = Alignment.TopCenter,
                 animationSpec = tween(300, easing = FastOutSlowInEasing)
             ),
-            exit = slideOutVertically(
-                targetOffsetY = { -it },
+            exit = shrinkVertically(
+                shrinkTowards = Alignment.Top,
                 animationSpec = tween(300, easing = FastOutLinearInEasing)
             ),
             modifier = Modifier.fillMaxWidth(),
@@ -75,11 +71,10 @@ fun NetworkStatus(connectionState: ConnectionState) {
                 }
                 Spacer(modifier = Modifier.height(8.dp))
             }
-
         }
     }
 
-    LaunchedEffect(connectionState) {
+    LaunchedEffect(connectionState, notifyNetworkWrning) {
         if (isFirstTime && isNetworkConnected) {
             isFirstTime = false
         } else {
@@ -89,7 +84,7 @@ fun NetworkStatus(connectionState: ConnectionState) {
     }
 
     LaunchedEffect(showNetworkStatus) {
-        delay(5000)
+        delay(3000)
         if (showNetworkStatus && isFirstTime) {
             isFirstTime = false
         }

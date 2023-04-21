@@ -40,29 +40,6 @@ private val MichatDarkColorScheme = lightColorScheme(
 )
 
 
-// OLDER
-//private val MichatLightColorScheme = lightColorScheme(
-//    primary = LightPrimary,
-//    secondary = LightSecondary,
-//    onPrimary = LightOnPrimary,
-//    onSecondary = LightOnSecondary,
-//    background = LightBackground,
-//    onSurface = LightOnSurface,
-//    surface = LightSurface,
-//    tertiary = LightTertiary,
-//)
-//
-//private val MichatDarkColorScheme = lightColorScheme(
-//    primary = DarkPrimary,
-//    secondary = DarkSecondary,
-//    onPrimary = DarkOnPrimary,
-//    background = DarkBackground,
-//    onSurface = DarkOnSurface,
-//    onSecondary = DarkOnSecondary,
-//    surface = DarkSurface,
-//    tertiary = DarkTertiary,
-//    )
-
 @Composable
 fun MichatTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),

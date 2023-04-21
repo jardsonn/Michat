@@ -52,6 +52,7 @@ fun HomeTopBar(
 fun ChatTopBar(
     assistant: AssistantIdentifier,
     isProcessing: Boolean,
+    isNetworkConnected: Boolean,
     onBackClicked: () -> Unit
 ) {
     Row(
@@ -81,7 +82,7 @@ fun ChatTopBar(
                 color = MaterialTheme.colorScheme.surface
             )
             Text(
-                text = stringResource(id = if (isProcessing) R.string.typing else R.string.online),
+                text = stringResource(id = if(!isNetworkConnected) R.string.offline else if (isProcessing) R.string.typing else R.string.online),
                 style = MaterialTheme.typography.titleSmall,
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.outline

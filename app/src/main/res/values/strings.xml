@@ -2,6 +2,7 @@
     <string name="app_name" translatable="false">Michat</string>
     <string name="robot_name">Babbage</string>
     <string name="online">Online</string>
+    <string name="offline">Offline</string>
     <string name="typing">Digitando…</string>
     <string name="message">Digite sua mensagem</string>
     <string name="assistants">Assistentes</string>
