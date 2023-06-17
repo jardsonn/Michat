@@ -1,8 +1,10 @@
 package com.jalloft.michat.ui.screens.chat
 
+import android.app.Activity
 import android.content.Intent
 import android.media.MediaPlayer
 import android.speech.RecognizerIntent
+import android.view.WindowManager
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -22,8 +24,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -34,6 +38,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.aallam.openai.api.BetaOpenAI
 import com.aallam.openai.api.chat.ChatMessage
@@ -47,20 +54,22 @@ import com.jalloft.michat.ui.theme.White
 import com.jalloft.michat.utils.ConnectionState
 import com.jalloft.michat.utils.connectivityState
 import com.jalloft.michat.utils.keyboardAsState
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import timber.log.Timber.Forest.i
 import java.util.*
 import kotlin.math.max
+import kotlin.math.min
 
-@OptIn(BetaOpenAI::class)
+@OptIn(BetaOpenAI::class, ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
-    viewModel: ChatViewModel = hiltViewModel(),
+//    viewModel: ChatViewModel = hiltViewModel(),
+    viewModel: NewChatViewModel = hiltViewModel(),
     assistant: AssistantIdentifier,
     onNotifyNetworkWrning: () -> Unit,
     onBackClicked: () -> Unit
 ) {
-
     val scrollState = rememberLazyListState()
     val connectionState by connectivityState()
 
@@ -136,11 +145,12 @@ fun ChatScreen(
 
     }
 
-//    LaunchedEffect(messages.value?.size) {
-//        coroutineScope.launch {
-//            scrollState.animateScrollToItem(max(messages.value?.size ?: 0, 1) - 1)
-//        }
-//    }
+    LaunchedEffect(connectionState, /*currentMessages*/) {
+        delay(1000)
+        if (isNetworkConnected && isProcessing == false){
+            viewModel.answerLastMessage()
+        }
+    }
 
 }
 
@@ -172,6 +182,7 @@ fun ChatBody(
     val (text, setText) = rememberSaveable {
         mutableStateOf("")
     }
+
     ConstraintLayout(modifier = modifier) {
         val (chatTextinput, messagesList, circleTyping) = createRefs()
         LazyColumn(
@@ -184,7 +195,8 @@ fun ChatBody(
                 },
             reverseLayout = true,
             state = scrollState,
-            verticalArrangement = Arrangement.Top
+            verticalArrangement = Arrangement.Top,
+            contentPadding = PaddingValues(bottom = 16.dp)
         ) {
             item {
                 i("ESTÁ Processando: $isProcessing")
@@ -206,9 +218,10 @@ fun ChatBody(
         }
 
         ChatTextInput(
-            modifier = Modifier.constrainAs(chatTextinput) {
-                bottom.linkTo(parent.bottom)
-            },
+            modifier = Modifier
+                .constrainAs(chatTextinput) {
+                    bottom.linkTo(parent.bottom)
+                },
             value = text,
             isNetworkConnected = isNetworkConnected,
             onValueChange = { setText(it) },
@@ -238,7 +251,6 @@ fun ChatBody(
 
     LaunchedEffect(currentMessages?.size, isKeyboardOpen) {
         coroutineScope.launch {
-//            scrollState.animateScrollToItem(max(currentMessages?.size ?: 0, 1) - 1)
             scrollState.animateScrollToItem(0)
         }
     }
@@ -356,103 +368,109 @@ fun ChatTextInput(
     isProcessing: Boolean,
 ) {
     var showSendButton by remember { mutableStateOf(false) }
+    var characterCount by remember {
+        mutableStateOf(0)
+    }
 
-    Row(
+    val maxCharacters = 500
+
+    Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .background(MaterialTheme.colorScheme.onSurface, RoundedCornerShape(3)),
     ) {
-        BasicTextField(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(max = 100.dp)
-                .weight(1f)
-                .padding(end = 8.dp),
-            keyboardOptions = KeyboardOptions(
-                capitalization = KeyboardCapitalization.Sentences,
-                imeAction = ImeAction.Done,
-            ),
-            value = value,
-            enabled = chatStarted,
-            onValueChange = {
-                onValueChange(it)
-                showSendButton = it.isNotEmpty()
-            },
-            textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.surface),
-            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-            decorationBox = {
-                Box(
+                .imePadding()
+                .padding(horizontal = 8.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.End
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                BasicTextField(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(
-                            color = MaterialTheme.colorScheme.onSurface,
-                            shape = RoundedCornerShape(50)
-                        )
-                        .padding(horizontal = 24.dp, vertical = 16.dp),
-                ) {
-                    if (value.isEmpty()) {
-                        Text(
-                            text = stringResource(id = R.string.message),
-                            style = MaterialTheme.typography.bodyLarge.copy(
-                                color = MaterialTheme.colorScheme.surface.copy(
-                                    .2f
+                        .heightIn(max = 100.dp)
+                        .weight(1f),
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Sentences,
+                        imeAction = ImeAction.Done,
+                    ),
+                    value = value,
+                    enabled = chatStarted,
+                    onValueChange = {
+                        if (it.length <= maxCharacters){
+                            onValueChange(it)
+                        }
+                        showSendButton = it.isNotEmpty()
+                        characterCount = min(it.length, maxCharacters)
+                    },
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.surface),
+                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                    decorationBox = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    shape = RoundedCornerShape(50)
                                 )
-                            )
-                        )
+                                .padding(start = 16.dp, top = 16.dp, end = 24.dp, bottom = 16.dp),
+                        ) {
+                            if (value.isEmpty()) {
+                                Text(
+                                    text = stringResource(id = R.string.message),
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        color = MaterialTheme.colorScheme.surface.copy(
+                                            .2f
+                                        )
+                                    )
+                                )
+                            }
+                            it()
+                        }
                     }
-                    it()
-                }
-            }
-        )
+                )
 
-        Button(
-            onClick = {
-                onSendMessage()
+                Button(
+                    onClick = {
+                        onSendMessage()
 //                if (isNetworkConnected) {
-                onValueChange("")
-                showSendButton = false
+                        onValueChange("")
+                        showSendButton = false
 //                }
 
-            },
-            shape = RoundedCornerShape(25),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = White,
-                disabledContainerColor = MaterialTheme.colorScheme.primary.copy(.5f)
-            ),
-            modifier = Modifier.size(50.dp),
-            contentPadding = PaddingValues(0.dp),
-            enabled = showSendButton && !isProcessing
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.round_send_24),
-                contentDescription = null
+                    },
+                    shape = RoundedCornerShape(25),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = White,
+                        disabledContainerColor = MaterialTheme.colorScheme.primary.copy(.5f)
+                    ),
+                    modifier = Modifier.size(38.dp),
+                    contentPadding = PaddingValues(0.dp),
+                    enabled = showSendButton && !isProcessing
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.round_send_24),
+                        contentDescription = null
+                    )
+                }
+            }
+
+            Text(
+                text = "$characterCount/$maxCharacters",
+                style = MaterialTheme.typography.bodySmall
             )
-
-
-//            AnimatedVisibility(
-//                visible = showSendButton,
-//                enter = scaleIn() + expandVertically(expandFrom = Alignment.CenterVertically),
-//                exit = scaleOut() + shrinkVertically(shrinkTowards = Alignment.CenterVertically)
-//            ) {
-//                Icon(
-//                    painter = painterResource(id = R.drawable.round_send_24),
-//                    contentDescription = null
-//                )
-//            }
-//            AnimatedVisibility(
-//                visible = !showSendButton,
-//                enter = scaleIn() + expandVertically(expandFrom = Alignment.CenterVertically),
-//                exit = scaleOut() + shrinkVertically(shrinkTowards = Alignment.CenterVertically)
-//            ) {
-//                Icon(
-//                    painter = painterResource(id = R.drawable.round_mic_24),
-//                    contentDescription = null
-//                )
-//            }
         }
+
+
     }
+
 }
 
 

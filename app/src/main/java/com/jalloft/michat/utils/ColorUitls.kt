@@ -11,7 +11,7 @@ object ColorUitls {
         return Pair(color1, color2)
     }
 
-    fun generateRandomColor(): Color {
+    private fun generateRandomColor(): Color {
         val hue = Random.nextFloat() * 360f
         val saturation = Random.nextFloat()
         val lightness = Random.nextFloat() * 0.8f + 0.1f
@@ -19,7 +19,7 @@ object ColorUitls {
         return hslToRgb(hue, saturation, lightness)
     }
 
-    fun hslToRgb(hue: Float, saturation: Float, lightness: Float): Color {
+    private fun hslToRgb(hue: Float, saturation: Float, lightness: Float): Color {
         val c = (1f - abs(2f * lightness - 1f)) * saturation
         val h = hue / 60f
         val x = c * (1f - abs(h % 2f - 1f))

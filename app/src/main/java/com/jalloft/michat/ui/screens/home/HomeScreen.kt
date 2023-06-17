@@ -1,9 +1,6 @@
 package com.jalloft.michat.ui.screens.home
 
 import androidx.compose.animation.*
-import androidx.compose.animation.core.FastOutLinearInEasing
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,27 +14,30 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.google.accompanist.placeholder.PlaceholderHighlight
+import com.google.accompanist.placeholder.material.fade
 import com.jalloft.michat.R
 import com.jalloft.michat.data.*
 import com.jalloft.michat.ui.components.HomeTopBar
-import com.jalloft.michat.ui.components.NetworkStatus
 import com.jalloft.michat.ui.components.RoundedRobotIcon
-import com.jalloft.michat.ui.theme.Malachite
-import com.jalloft.michat.ui.theme.Red
 import com.jalloft.michat.utils.ColorUitls.generateRandomColors
-import com.jalloft.michat.utils.ConnectionState
 import com.jalloft.michat.utils.connectivityState
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import timber.log.Timber.Forest.i
+import com.google.accompanist.placeholder.material.placeholder
+import com.google.accompanist.placeholder.material.shimmer
+import com.google.accompanist.placeholder.placeholder
+import kotlinx.coroutines.delay
+
 
 fun getAssistants() = AssistantsEnum.values().map {
     AssistantIdentifier(it)
@@ -46,17 +46,44 @@ fun getAssistants() = AssistantsEnum.values().map {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    viewModel: HomeViewModel = hiltViewModel(),
+    viewModel: HomeViewModel,
     onClick: (AssistantIdentifier) -> Unit,
     onSettingClick: () -> Unit,
+    onSignin: (AssistantIdentifier) -> Unit,
 ) {
 
     val topAppBarState = rememberTopAppBarState()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(topAppBarState)
 
-    val connectionState by connectivityState()
+    var assistants by remember {
+        mutableStateOf<List<AssistantIdentifier>>(mutableListOf())
+    }
 
-    i("CONEXÃO ESTADO: $connectionState")
+    val coroutineScope = rememberCoroutineScope()
+
+    val lastMessagesSate = viewModel.lastMessages.collectAsState()
+
+    var lastMessages by remember {
+        mutableStateOf<List<FirebaseMessage>>(arrayListOf())
+    }
+
+    var loadingLastMessage by remember {
+        mutableStateOf(lastMessages.isEmpty())
+    }
+
+    when (val state = lastMessagesSate.value) {
+        is HomeViewModel.LatestMessagesState.LastMessages -> LaunchedEffect(lastMessagesSate) {
+            loadingLastMessage = false
+            lastMessages = state.messages
+        }
+        is HomeViewModel.LatestMessagesState.Loading -> LaunchedEffect(lastMessagesSate) {
+            loadingLastMessage = true
+        }
+        else -> LaunchedEffect(lastMessagesSate) {
+            loadingLastMessage = false
+            i("LaunchedEffect.state = $state")
+        }
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -68,20 +95,6 @@ fun HomeScreen(
             )
         },
     ) { values ->
-
-        val assistants by remember {
-            mutableStateOf(getAssistants())
-        }
-//
-//        val lastMessage by remember {
-//            mutableStateOf(getFakeLastMessages(assistants))
-//        }
-
-        val lastMessagesSate = viewModel.lastMessages.collectAsState()
-        var lastMessages by remember {
-            mutableStateOf<List<Message>>(arrayListOf())
-        }
-
         LazyColumn(
             modifier = Modifier
                 .nestedScroll(scrollBehavior.nestedScrollConnection)
@@ -89,68 +102,157 @@ fun HomeScreen(
                 .fillMaxSize()
         ) {
 
-//            item {
-//                NetworkStatus(connectionState)
-//            }
-
             item {
                 Text(
                     text = stringResource(id = R.string.assistants),
                     style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier
-                        .padding(16.dp),
+                    modifier = Modifier.padding(16.dp),
                     color = MaterialTheme.colorScheme.surface
 
                 )
 
-                AssistantsRowList(modifier = Modifier, assistants, onClick = onClick)
-
+                AssistantsRowList(
+                    modifier = Modifier,
+                    assistants,
+                    onClick = { if (!viewModel.isAuthenticated()) onSignin(it) else onClick(it) })
                 FreeTalkPanel(
                     modifier = Modifier
-                        .padding(
-                            start = 16.dp,
-                            top = 16.dp,
-                            end = 16.dp,
-                            bottom = 8.dp
-                        )
-                        .clickable { onClick(AssistantIdentifier(AssistantsEnum.FreeChat)) },
+                        .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 8.dp)
+                        .clickable {
+                            if (!viewModel.isAuthenticated()) onSignin(
+                                AssistantIdentifier(
+                                    AssistantsEnum.FreeChat
+                                )
+                            ) else onClick(AssistantIdentifier(AssistantsEnum.FreeChat))
+                        },
                     stringResource(id = R.string.free_talk),
                     stringResource(id = R.string.talk_about_everything)
                 )
 
-                if (lastMessages.isNotEmpty()) {
+                if (lastMessages.isNotEmpty() && viewModel.isAuthenticated()) {
                     Text(
                         text = stringResource(id = R.string.last_conversations),
                         style = MaterialTheme.typography.labelLarge,
-                        modifier = Modifier.padding(
-                            start = 16.dp,
-                            top = 8.dp,
-                            end = 16.dp,
-                            bottom = 8.dp
-                        ),
+                        modifier = Modifier
+                            .padding(
+                                start = 16.dp,
+                                top = 8.dp,
+                                end = 16.dp,
+                                bottom = 8.dp
+                            )
+                            .placeholder(
+                                visible = lastMessages.isEmpty(),
+                                highlight = PlaceholderHighlight.shimmer(),
+                            ),
                         color = MaterialTheme.colorScheme.surface
                     )
                 }
             }
-            items(lastMessages) {
-                LastMessageItem(it, onChatClick = { lastMessage ->
-                    onClick(lastMessage.getAssistant())
-                })
+            if (lastMessages.isNotEmpty() && viewModel.isAuthenticated()) {
+                items(lastMessages) {
+                    LastMessageItem(it, onChatClick = { lastMessage ->
+                        if (!viewModel.isAuthenticated()) onSignin(lastMessage.getAssistant()) else onClick(
+                            lastMessage.getAssistant()
+                        )
+                    })
+                }
+                i("Sumir Shimmer")
+            } else if (loadingLastMessage && viewModel.isAuthenticated()) {
+                items(5) {
+                    ShimmerLastMessageItem()
+                }
+                i("Mostrar Shimmer")
             }
         }
+    }
 
-        when (val state = lastMessagesSate.value) {
-            is HomeViewModel.LatestMessagesState.LastMessages -> {
-                lastMessages = state.messages
-            }
-            else -> {}
+    LaunchedEffect(coroutineScope) {
+        coroutineScope.launch(Dispatchers.IO) {
+            assistants = getAssistants()
+            delay(1000)
+            loadingLastMessage = false
         }
     }
 }
 
+@Composable
+fun ShimmerLastMessageItem() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Spacer(
+            modifier = Modifier
+                .size(50.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .placeholder(
+                    visible = true,
+                    highlight = PlaceholderHighlight.shimmer(),
+                )
+        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp)
+                .weight(1f),
+            verticalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Spacer(
+                    modifier = Modifier
+                        .padding(end = 8.dp)
+                        .width(100.dp)
+                        .height(10.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .placeholder(
+                            visible = true,
+                            highlight = PlaceholderHighlight.shimmer()
+                        )
+                )
+                Spacer(
+                    modifier = Modifier
+                        .size(2.dp)
+                        .background(MaterialTheme.colorScheme.onSecondary, CircleShape)
+                        .placeholder(
+                            visible = true,
+                            highlight = PlaceholderHighlight.shimmer()
+                        )
+                )
+                Spacer(
+                    modifier = Modifier
+                        .padding(start = 8.dp)
+                        .width(50.dp)
+                        .height(10.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .placeholder(
+                            visible = true,
+                            highlight = PlaceholderHighlight.shimmer(),
+                        )
+                )
+            }
+            Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .height(10.dp)
+                    .placeholder(
+                        visible = true,
+                        highlight = PlaceholderHighlight.shimmer(),
+                    )
+            )
+        }
+    }
+}
 
 @Composable
-fun LastMessageItem(message: Message, onChatClick: (Message) -> Unit) {
+fun LastMessageItem(message: FirebaseMessage, onChatClick: (FirebaseMessage) -> Unit) {
     val assistant = message.getAssistant()
     Row(
         modifier = Modifier
@@ -167,11 +269,30 @@ fun LastMessageItem(message: Message, onChatClick: (Message) -> Unit) {
                 .weight(1f),
             verticalArrangement = Arrangement.SpaceEvenly
         ) {
-            Text(
-                text = if (assistant.assistant == AssistantsEnum.FreeChat) stringResource(id = assistant.assistant.stringId) else assistant.assistant.name,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.surface
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = if (assistant.assistant == AssistantsEnum.FreeChat) stringResource(id = assistant.assistant.stringId) else assistant.assistant.name,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.surface,
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+                Spacer(
+                    modifier = Modifier
+                        .size(2.dp)
+                        .background(MaterialTheme.colorScheme.onSecondary, CircleShape)
+                )
+                Text(
+                    text = stringResource(id = assistant.specialtyNameStringId),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSecondary,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+
+            }
+
             Text(
                 text = message.content,
                 style = MaterialTheme.typography.labelMedium,
@@ -259,7 +380,6 @@ fun AssistantsRowList(
 
 @Composable
 fun AssistantRowItem(assistant: AssistantIdentifier, onClick: (AssistantIdentifier) -> Unit) {
-    val openMessage = assistant.systemMessage()
     Column(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -275,7 +395,7 @@ fun AssistantRowItem(assistant: AssistantIdentifier, onClick: (AssistantIdentifi
 
         )
         Text(
-            text = stringResource(id = assistant.specialtyNameId),
+            text = stringResource(id = assistant.specialtyNameStringId),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSecondary
         )

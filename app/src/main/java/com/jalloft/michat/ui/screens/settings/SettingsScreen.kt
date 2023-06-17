@@ -14,14 +14,21 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.jalloft.michat.R
 import com.jalloft.michat.ui.components.ScreensTopBar
+import com.jalloft.michat.ui.screens.authentication.AuthViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
+    authViewModel: AuthViewModel = hiltViewModel(),
     onBackClicked: () -> Unit = {},
+    onProfileClick: (Boolean) -> Unit = {},
+    onFavoritesClick: () -> Unit = {},
+    onFeedbackClick: () -> Unit = {},
+    onPrivacyPolicyClick: () -> Unit = {},
 ) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -46,22 +53,26 @@ fun SettingsScreen(
                         .padding(top = 16.dp)
                 ) {
                     Option(
-                        modifier =  Modifier.clickable(role = Role.Button) {  },
+                        modifier = Modifier.clickable(role = Role.Button) {
+                            onProfileClick(authViewModel.isAuthenticated())
+                        },
                         painter = painterResource(id = R.drawable.ic_my_account),
-                        labelOption = "Minha conta",
-                        labelDescription = "Configurações de sua conta",
+                        labelOption = stringResource(R.string.my_account),
+                        labelDescription = stringResource(R.string.your_account_settings),
                     )
                     Option(
-                        modifier =  Modifier.clickable(role = Role.Button) {  },
+                        modifier = Modifier.clickable(role = Role.Button) {
+                            onFavoritesClick()
+                        },
                         painter = painterResource(id = R.drawable.ic_favorite),
-                        labelOption = "Mensagens favoritas",
-                        labelDescription = "Suas mensagens favoritas",
+                        labelOption = stringResource(R.string.favorite_messages),
+                        labelDescription = stringResource(R.string.your_favorite_messages),
                     )
 
                     Option(
                         painter = painterResource(id = R.drawable.ic_sons),
-                        labelOption = "Sons de conversas",
-                        labelDescription = "Reproduzir sons ao receber mensagem",
+                        labelOption = stringResource(R.string.conversation_sounds),
+                        labelDescription = stringResource(R.string.play_sounds_when_receiving_message),
                         indicador = {
                             Switch(checked = true, onCheckedChange = {})
                         },
@@ -74,35 +85,31 @@ fun SettingsScreen(
                         .padding(top = 16.dp)
                 ) {
                     Option(
-                        modifier =  Modifier.clickable(role = Role.Button) {  },
+                        modifier = Modifier.clickable(role = Role.Button) { },
                         painter = painterResource(id = R.drawable.ic_share),
-                        labelOption = "Compartilhar aplicativo",
-                        labelDescription = "Compartilhar aplicativo com amigos",
+                        labelOption = stringResource(R.string.share_app),
+                        labelDescription = stringResource(R.string.share_app_with_friends),
                     )
                     Option(
-                        modifier =  Modifier.clickable(role = Role.Button) {  },
+                        modifier = Modifier.clickable(role = Role.Button) {
+                            onFeedbackClick()
+                        },
                         painter = painterResource(id = R.drawable.ic_feedback),
-                        labelOption = "Feedback",
-                        labelDescription = "Reporte bugs e conte-nos em que podemos melhorar",
+                        labelOption = stringResource(R.string.feedback),
+                        labelDescription = stringResource(R.string.report_bugs),
                     )
 
                     Option(
-                        modifier =  Modifier.clickable(role = Role.Button) {  },
+                        modifier = Modifier.clickable(role = Role.Button) {
+                            onPrivacyPolicyClick()
+                        },
                         painter = painterResource(id = R.drawable.ic_policy),
-                        labelOption = "Política de Privacidade",
-                        labelDescription = "Política de Privacidade",
+                        labelOption = stringResource(R.string.privacy_policy),
+                        labelDescription = stringResource(R.string.privacy_policy),
                     )
                 }
             }
         }
-
-//        Column(
-//            modifier = Modifier
-//                .padding(values)
-//                .padding(16.dp)
-//        ) {
-//
-//        }
     }
 }
 
@@ -126,7 +133,7 @@ fun CardOption(modifier: Modifier, options: @Composable () -> Unit) {
 
 @Composable
 fun Option(
-    modifier:Modifier = Modifier.fillMaxWidth(),
+    modifier: Modifier = Modifier.fillMaxWidth(),
     painter: Painter,
     labelOption: String,
     labelDescription: String,
@@ -141,14 +148,16 @@ fun Option(
 ) {
     Box(
         modifier = modifier,
-    ){
+    ) {
         Row(
             modifier = Modifier
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                painter = painter, contentDescription = null, tint = MaterialTheme.colorScheme.surface
+                painter = painter,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.surface
             )
             Column(
                 modifier = Modifier

@@ -6,9 +6,7 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,8 +21,13 @@ import com.jalloft.michat.utils.ConnectionState
 import kotlinx.coroutines.delay
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NetworkStatus(modifier: Modifier = Modifier, connectionState: ConnectionState, notifyNetworkWrning: Boolean) {
+fun NetworkStatus(
+    modifier: Modifier = Modifier,
+    connectionState: ConnectionState,
+    notifyNetworkWrning: Boolean
+) {
     val isNetworkConnected = connectionState == ConnectionState.Available
     var showNetworkStatus by remember { mutableStateOf(false) }
 
@@ -44,7 +47,10 @@ fun NetworkStatus(modifier: Modifier = Modifier, connectionState: ConnectionStat
             modifier = Modifier.fillMaxWidth(),
         ) {
             Column(
-                modifier = Modifier
+                modifier = Modifier.systemBarsPadding()
+//                    .windowInsetsPadding(
+//                        WindowInsets.systemBars//.only(WindowInsetsSides.Horizontal)
+//                    )
                     .background(color = if (!isNetworkConnected) Red else Malachite)
                     .fillMaxWidth()
                     .animateContentSize(),
@@ -71,6 +77,7 @@ fun NetworkStatus(modifier: Modifier = Modifier, connectionState: ConnectionStat
                 }
                 Spacer(modifier = Modifier.height(8.dp))
             }
+
         }
     }
 

@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "596454591614",
+    "project_id": "michat-c48cd",
+    "storage_bucket": "michat-c48cd.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:596454591614:android:8a8500e5be43e8ced91c2f",
+        "android_client_info": {
+          "package_name": "com.jalloft.michat"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "596454591614-90lkrakkbo5lj3uu2fsj06qp9bf3g14u.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAYySZ-Tckh_-xxYtAFv-TlzO6PXs9UOJM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "596454591614-90lkrakkbo5lj3uu2fsj06qp9bf3g14u.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

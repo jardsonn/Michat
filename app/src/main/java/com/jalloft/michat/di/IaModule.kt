@@ -7,6 +7,9 @@ import com.aallam.openai.api.logging.Logger
 import com.aallam.openai.client.OpenAI
 import com.aallam.openai.client.OpenAIConfig
 import com.jalloft.michat.BuildConfig
+import com.knuddels.jtokkit.Encodings
+import com.knuddels.jtokkit.api.Encoding
+import com.knuddels.jtokkit.api.ModelType
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -25,18 +28,15 @@ object IaModule {
     @Provides
     fun provideOpenIA(): OpenAI = OpenAI(
         OpenAIConfig(
-        token = BuildConfig.OPENIA_API_KEY,
-        logger = Logger.Empty
-    ))
+            token = BuildConfig.OPENIA_API_KEY,
+            logger = Logger.Empty
+        )
+    )
 
-  @OptIn(BetaOpenAI::class)
-  @Singleton
+    @Singleton
     @Provides
-    fun provideMessages(): List<ChatMessage> = mutableListOf(
-      ChatMessage(
-          role = ChatRole.System,
-          content = "Você é um assistente sarcástico e seu nom é Babbage. Você não precisa informa que você é sarcástico"
-      )
-  )
+    fun provideEncoding(): Encoding = Encodings.newDefaultEncodingRegistry().run {
+        getEncodingForModel(ModelType.TEXT_DAVINCI_003)
+    }
 
 }

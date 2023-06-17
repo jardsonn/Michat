@@ -14,10 +14,28 @@ import kotlinx.parcelize.Parcelize
 @Parcelize
 data class AssistantIdentifier(
     val assistant: AssistantsEnum,
-    val specialtyNameId: Int = getAssistantByName(assistant),
+    val specialtyNameStringId: Int = getAssistantByName(assistant),
     val color: Int = getColorByName(assistant).toArgb(),
-    val id: Int = getIdByName(assistant)
+    val id: Int = getIdByName(assistant),
+    val specialty: Specialty = getSpecialtyById(id)
 ) : Parcelable
+
+fun getSpecialtyById(id: Int): Specialty {
+    return when(id){
+        0 -> Specialty.All
+        1 -> Specialty.Astrology
+        2 -> Specialty.Geography
+        3 -> Specialty.Health
+        4 -> Specialty.Music
+        5 -> Specialty.Mathematics
+        6 -> Specialty.History
+        7 -> Specialty.Science
+        8 -> Specialty.Culinary
+        9 -> Specialty.Style
+        else -> Specialty.All
+    }
+}
+
 
 fun getIdByName(assistant: AssistantsEnum): Int {
     return when (assistant) {
@@ -34,20 +52,19 @@ fun getIdByName(assistant: AssistantsEnum): Int {
     }
 }
 
-
-//@Parcelize
-//enum class AssistantSpecialty(@StringRes val stringId: Int) : Parcelable {
-//    All(R.string.chat),
-//    Mathematics(R.string.mathematics),
-//    Music(R.string.music),
-//    Health(R.string.health),
-//    Astrology(R.string.astrology),
-//    Geography(R.string.geography),
-//    History(R.string.history),
-//    Science(R.string.science),
-//    Culinary(R.string.culinary),
-//    Style(R.string.style),
-//}
+@Parcelize
+enum class Specialty : Parcelable {
+    All,
+    Mathematics,
+    Music,
+    Health,
+    Astrology,
+    Geography,
+    History,
+    Science,
+    Culinary,
+    Style,
+}
 
 @Parcelize
 enum class AssistantsEnum(val stringId: Int = -1) : Parcelable {
@@ -59,7 +76,7 @@ enum class AssistantsEnum(val stringId: Int = -1) : Parcelable {
 fun AssistantIdentifier.systemMessage() =
     if (assistant == AssistantsEnum.FreeChat) stringResource(R.string.system_opening_message_chat) else stringResource(
         id = R.string.system_opening_message_specialist,
-        stringResource(specialtyNameId),
+        stringResource(specialtyNameStringId),
         assistant.name
     )
 
@@ -96,5 +113,9 @@ fun getColorByName(assistant: AssistantsEnum): Color {
 
 fun AssistantIdentifier.toJson(): String = Gson().toJson(this)
 
-fun String.toAssistant(): AssistantIdentifier =
+fun String.toAssistant(): AssistantIdentifier? = try {
     Gson().fromJson(this, AssistantIdentifier::class.java)
+}catch (e: Exception){
+    null
+}
+
