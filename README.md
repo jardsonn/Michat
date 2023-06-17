@@ -2,21 +2,21 @@
 
 ## Screenshots
 #### Dark
-<p>
-  <img src="https://github.com/jcs-eu/Michat/blob/master/screenshots/ScreenshotDark_1.png" width="22%" />
-  <img src="https://github.com/jcs-eu/Michat/blob/master/screenshots/ScreenshotDark_2.png" width="22%" />
-  <img src="https://github.com/jcs-eu/Michat/blob/master/screenshots/ScreenshotDark_3.png" width="22%" />
-  <img src="https://github.com/jcs-eu/Michat/blob/master/screenshots/ScreenshotDark_4.png" width="22%" />
-  <img src="https://github.com/jcs-eu/Michat/blob/master/screenshots/ScreenshotDark_5.png" width="22%" />
+<p align="center">
+  <img src="https://github.com/jcs-eu/Michat/blob/master/screenshots/ScreenshotDark_1.png" width="19%" />
+  <img src="https://github.com/jcs-eu/Michat/blob/master/screenshots/ScreenshotDark_2.png" width="19%" />
+  <img src="https://github.com/jcs-eu/Michat/blob/master/screenshots/ScreenshotDark_3.png" width="19%" />
+  <img src="https://github.com/jcs-eu/Michat/blob/master/screenshots/ScreenshotDark_4.png" width="19%" />
+  <img src="https://github.com/jcs-eu/Michat/blob/master/screenshots/ScreenshotDark_5.png" width="19%" />
 </p>
 
 #### Light
-<p>
-  <img src="https://github.com/jcs-eu/Michat/blob/master/screenshots/ScreenshotLight_1.png" width="22%" />
-  <img src="https://github.com/jcs-eu/Michat/blob/master/screenshots/ScreenshotLight_2.png" width="22%" />
-  <img src="https://github.com/jcs-eu/Michat/blob/master/screenshots/ScreenshotLight_3.png" width="22%" />
-  <img src="https://github.com/jcs-eu/Michat/blob/master/screenshots/ScreenshotLight_4.png" width="22%" />
-  <img src="https://github.com/jcs-eu/Michat/blob/master/screenshots/ScreenshotLight_5.png" width="22%" />
+<p align="center">
+  <img src="https://github.com/jcs-eu/Michat/blob/master/screenshots/ScreenshotLight_1.png" width="19%" />
+  <img src="https://github.com/jcs-eu/Michat/blob/master/screenshots/ScreenshotLight_2.png" width="19%" />
+  <img src="https://github.com/jcs-eu/Michat/blob/master/screenshots/ScreenshotLight_3.png" width="19%" />
+  <img src="https://github.com/jcs-eu/Michat/blob/master/screenshots/ScreenshotLight_4.png" width="19%" />
+  <img src="https://github.com/jcs-eu/Michat/blob/master/screenshots/ScreenshotLight_5.png" width="19%" />
 </p>
 
 <p>
